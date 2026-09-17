@@ -1,0 +1,37 @@
+# The app and a Postgres, for trying Sift without installing one.
+#
+#   docker compose up --build
+#   docker compose exec app npm run setup    # load the demo pile
+#
+# Then http://localhost:3000.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sift
+      POSTGRES_PASSWORD: sift
+      POSTGRES_DB: sift
+    healthcheck:
+      # The app starts the moment Postgres accepts connections rather than after a fixed
+      # sleep, because a fixed sleep is always either too short on a cold machine or too
+      # long on a warm one.
+      test: ['CMD-SHELL', 'pg_isready -U sift -d sift']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - sift-data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    environment:
+      SIFT_DATABASE_URL: postgres://sift:sift@db:5432/sift
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  sift-data:

@@ -1,0 +1,27 @@
+# Render blueprint: the app and its database, wired together.
+#
+# New → Blueprint → pick this repo. Render provisions both and injects the connection
+# string, so there is nothing to copy by hand. Seed the demo pile afterwards by running
+# `npm run setup` locally against the database's External Connection String.
+
+databases:
+  - name: sift-db
+    databaseName: sift
+    user: sift
+    plan: free
+
+services:
+  - type: web
+    name: sift
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/projects
+    envVars:
+      - key: SIFT_DATABASE_URL
+        fromDatabase:
+          name: sift-db
+          property: connectionString
+      - key: NODE_VERSION
+        value: 20
