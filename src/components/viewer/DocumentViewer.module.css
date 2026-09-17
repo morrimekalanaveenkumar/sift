@@ -1,0 +1,122 @@
+.frame { position: relative; height: 100%; min-height: 0; }
+
+.tags {
+  position: absolute;
+  top: 8px; left: 14px; z-index: 2;
+  display: flex; gap: 8px; align-items: center;
+  pointer-events: none;
+}
+
+.root {
+  position: relative;
+  height: 100%;
+  overflow: auto;
+  background: var(--bg-sunken);
+  display: flex;
+  justify-content: center;
+  padding: 30px 24px 24px;
+  scroll-behavior: smooth;
+}
+
+.stage { position: relative; align-self: flex-start; }
+
+.page {
+  display: block;
+  background: white;
+  box-shadow: var(--shadow);
+  border-radius: 2px;
+}
+
+.overlay { position: absolute; inset: 0; pointer-events: none; }
+
+.box {
+  position: absolute;
+  border-radius: 2px;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.box[data-tone='sure']   { background: color-mix(in srgb, var(--sure) 14%, transparent); }
+.box[data-tone='likely'] { background: color-mix(in srgb, var(--likely) 20%, transparent); }
+.box[data-tone='unsure'] { background: color-mix(in srgb, var(--unsure) 20%, transparent); }
+.box:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* The active region. Two elements: a steady ring, and a pulse that plays once on arrival
+   so the eye is drawn to it without anything continuing to move afterwards. */
+.box[data-active='true'] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent);
+  z-index: 2;
+}
+.box[data-active='true']::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 4px;
+  border: 2px solid var(--accent);
+  animation: ping var(--slow) var(--ease) 1;
+}
+@keyframes ping {
+  from { transform: scale(1); opacity: 0.9; }
+  to   { transform: scale(1.7); opacity: 0; }
+}
+
+/* The label that produced this value, shown fainter — it explains where the value came
+   from without competing with the value itself. */
+.labelBox {
+  position: absolute;
+  border-radius: 2px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--base) var(--ease);
+}
+.labelBox[data-active='true'] { opacity: 1; }
+
+.connector {
+  position: absolute;
+  pointer-events: none;
+  overflow: visible;
+  opacity: 0;
+  transition: opacity var(--base) var(--ease);
+}
+.connector[data-active='true'] { opacity: 1; }
+.connectorLine {
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 3;
+  fill: none;
+}
+
+.chrome {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  align-self: flex-start;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: -8px;
+}
+
+.status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-subtle);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.pageTag {
+  font-size: 11px;
+  color: var(--text-subtle);
+  font-family: var(--mono);
+}
+
+.rotatedTag {
+  font-size: 11px;
+  color: var(--likely);
+  font-family: var(--mono);
+}
