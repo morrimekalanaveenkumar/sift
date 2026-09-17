@@ -1,0 +1,163 @@
+/*
+ * Sift's design tokens.
+ *
+ * Light by default, unusually for a developer tool, and deliberately: this app renders
+ * documents, and a document is a white page. A dark chrome around a white page fights
+ * it — the page glares, and the eye is dragged to the brightest thing on screen instead
+ * of to the data. Everything here is built to sit quietly around a piece of paper.
+ *
+ * The confidence palette is the one that carries meaning. It is a sequence, not a set of
+ * categories: certain → likely → unsure → empty. Those have an order, so they get a
+ * single hue ramp plus one warning colour, rather than four unrelated colours that the
+ * reader has to memorise.
+ */
+
+:root {
+  color-scheme: light;
+
+  --bg:            #f6f7f9;
+  --bg-raised:     #ffffff;
+  --bg-sunken:     #eef0f4;
+  --bg-hover:      #e9ecf1;
+  --bg-active:     #dfe4ec;
+
+  --border:        #e2e5eb;
+  --border-strong: #cbd1db;
+  --border-focus:  #3b6fd4;
+
+  --text:          #14171c;
+  --text-muted:    #5a6270;
+  --text-subtle:   #8b93a1;
+  --text-inverse:  #ffffff;
+
+  --accent:        #2f62cc;
+  --accent-bg:     #eaf0fd;
+  --accent-border: #bed0f5;
+  --accent-strong: #1c49a8;
+
+  /* Confidence ramp — one hue, increasing alarm. */
+  --sure:          #1f7a4d;
+  --sure-bg:       #e7f5ee;
+  --sure-border:   #b4dfc9;
+
+  --likely:        #8a6d15;
+  --likely-bg:     #fcf4dd;
+  --likely-border: #ecd9a0;
+
+  --unsure:        #b4451f;
+  --unsure-bg:     #fdeee8;
+  --unsure-border: #f3c9b7;
+
+  --empty:         #8b93a1;
+  --empty-bg:      #f1f3f6;
+
+  --danger:        #c0392f;
+  --danger-bg:     #fdecea;
+
+  --radius-sm: 4px;
+  --radius:    7px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.06);
+  --shadow:    0 6px 20px rgb(16 24 40 / 0.10);
+  --shadow-lg: 0 20px 56px rgb(16 24 40 / 0.16);
+
+  --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  /* Motion. One easing for everything that moves between two places, so the whole app
+     feels like it obeys the same physics. */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --fast: 140ms;
+  --base: 240ms;
+  --slow: 420ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg:            #0e1014;
+    --bg-raised:     #15181e;
+    --bg-sunken:     #0a0c10;
+    --bg-hover:      #1c2027;
+    --bg-active:     #242932;
+
+    --border:        #242831;
+    --border-strong: #333944;
+    --border-focus:  #5b8def;
+
+    --text:          #e7eaf0;
+    --text-muted:    #9aa2b1;
+    --text-subtle:   #6b7382;
+
+    --accent:        #6d9bfa;
+    --accent-bg:     #15213a;
+    --accent-border: #2b4478;
+    --accent-strong: #8fb4ff;
+
+    --sure:          #4cbe85;
+    --sure-bg:       #10241a;
+    --sure-border:   #1f4633;
+
+    --likely:        #dcb452;
+    --likely-bg:     #262013;
+    --likely-border: #4d401f;
+
+    --unsure:        #f0805c;
+    --unsure-bg:     #2a1610;
+    --unsure-border: #5a2c1d;
+
+    --empty:         #6b7382;
+    --empty-bg:      #171a20;
+
+    --danger:        #ef7060;
+    --danger-bg:     #2a1513;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.5);
+    --shadow:    0 6px 20px rgb(0 0 0 / 0.45);
+    --shadow-lg: 0 20px 56px rgb(0 0 0 / 0.55);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+body { overflow: hidden; }
+
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+input, select, textarea { font: inherit; color: inherit; }
+
+:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+code, pre, .mono { font-family: var(--mono); font-size: 12.5px; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong); border-radius: 6px;
+  border: 3px solid transparent; background-clip: content-box;
+}
+
+/*
+ * Reduced motion is honoured properly rather than by disabling animation globally.
+ *
+ * The transitions here are not decoration: the morph from a table cell to a region of a
+ * page is what tells you *where the value came from*, and killing it outright removes
+ * information. So motion is shortened to near-instant, which preserves the relationship
+ * while removing the movement.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root { --fast: 1ms; --base: 1ms; --slow: 1ms; }
+  *, *::before, *::after { animation-duration: 1ms !important; }
+}
