@@ -38,12 +38,15 @@ from your laptop with `SIFT_DATABASE_URL` pointing at the hosted database.
    Or connect the GitHub repo in the Vercel dashboard and add the environment variable
    there.
 
-**Two things to know about serverless here.** Ingest is synchronous and a 40-document pile
-takes a couple of seconds, which is comfortably inside Vercel's default function timeout —
-but a much larger upload would need the timeout raised (`maxDuration`) or a queue. And
+**Three things to know about serverless here.** Ingest is synchronous; forty documents take
+about 1.5 seconds, well inside the 60-second `maxDuration` set on the upload route. That
+number is deliberately the Hobby ceiling — a value above your plan's limit fails the *build*
+rather than degrading — so raise it in `src/app/api/projects/route.ts` if you turn on Fluid
+Compute and want to accept much larger piles. Progress is streamed as NDJSON, which needs a
+Node runtime rather than Edge; that is the default here and nothing declares otherwise. And
 `pg`'s pool does not survive between invocations, so a busy deployment wants Neon's pooled
-connection string rather than the direct one. Both are noted in `decisions.md` §13 as
-things a production version would change.
+connection string rather than the direct one. These are noted in `decisions.md` §13 as things
+a production version would change.
 
 ---
 

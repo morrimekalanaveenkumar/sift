@@ -3,9 +3,12 @@ import { ensureSchema, withDb } from '@/lib/db/client';
 import { ingest, type IngestFile, type Progress } from '@/lib/extract/ingest';
 
 export const dynamic = 'force-dynamic';
-// Ingestion parses every file before it can analyse any of them, so a large pile takes
-// a while. Ask for the longest slice the host allows.
-export const maxDuration = 300;
+// Ingestion parses every file before it can analyse any of them, so a large pile takes a
+// while. 60s rather than the 300 this would like: it is the ceiling a Vercel Hobby project
+// allows without Fluid Compute, and a value above the plan's limit fails the *build* rather
+// than degrading — a deploy that never starts is worse than one that has to raise this
+// later. Forty documents take about 1.5 seconds, so there is a lot of headroom.
+export const maxDuration = 60;
 
 export async function GET() {
   return handle(async () => {
