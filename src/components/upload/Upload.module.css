@@ -176,3 +176,26 @@
 .pileDelete:hover { background: var(--danger-bg); color: var(--danger); }
 
 .confirm { display: flex; gap: 6px; animation: slideIn var(--fast) var(--ease) both; }
+
+/* --- the demo pile offer -------------------------------------------------- */
+
+.demoRow {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-subtle);
+}
+
+.demoLink {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.demoLink:hover:not(:disabled) { color: var(--accent-strong); }
+.demoLink:disabled { cursor: not-allowed; opacity: 0.5; }

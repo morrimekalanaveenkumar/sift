@@ -7,9 +7,13 @@ variable:
 SIFT_DATABASE_URL=postgres://user:password@host:5432/dbname?sslmode=require
 ```
 
-The schema is created on first request, so there is no migration step. To have the deployed
-instance open on the demo pile rather than an empty screen, run `npm run setup` **once**
-from your laptop with `SIFT_DATABASE_URL` pointing at the hosted database.
+The schema is created on first request, so there is no migration step — and there is no
+seeding step either. A deployed instance with an empty database offers **Load the
+40-document demo pile** on its home page, which generates the corpus on the server and
+ingests it in about a second, so whoever opens the URL first sees the whole thing working.
+
+(Running `npm run setup` from your laptop against the hosted database does the same thing
+ahead of time, if you would rather the pile already be there.)
 
 ---
 
@@ -18,25 +22,18 @@ from your laptop with `SIFT_DATABASE_URL` pointing at the hosted database.
 1. **Create the database.** [neon.tech](https://neon.tech) → new project → copy the pooled
    connection string. (Supabase, Railway or any other hosted Postgres works identically.)
 
-2. **Seed it from your laptop**, so the deployed app opens on something worth looking at:
+2. **Deploy.** No CLI needed: Vercel dashboard → **Add New → Project** → import the GitHub
+   repo → add `SIFT_DATABASE_URL` under **Environment Variables** → **Deploy**.
+
+   From a terminal instead:
 
    ```bash
-   SIFT_DATABASE_URL='postgres://…?sslmode=require' npm run setup
-   ```
-
-   About a minute, most of it network round-trips. It creates the schema, generates the
-   corpus if it is missing, and ingests all 40 documents.
-
-3. **Deploy.**
-
-   ```bash
-   npx vercel            # first run links the project
-   npx vercel env add SIFT_DATABASE_URL    # paste the same connection string
+   npx vercel                              # first run links the project
+   npx vercel env add SIFT_DATABASE_URL    # paste the connection string
    npx vercel --prod
    ```
 
-   Or connect the GitHub repo in the Vercel dashboard and add the environment variable
-   there.
+3. **Open the URL** and click **Load the 40-document demo pile**.
 
 **Three things to know about serverless here.** Ingest is synchronous; forty documents take
 about 1.5 seconds, well inside the 60-second `maxDuration` set on the upload route. That
@@ -45,7 +42,7 @@ rather than degrading — so raise it in `src/app/api/projects/route.ts` if you 
 Compute and want to accept much larger piles. Progress is streamed as NDJSON, which needs a
 Node runtime rather than Edge; that is the default here and nothing declares otherwise. And
 `pg`'s pool does not survive between invocations, so a busy deployment wants Neon's pooled
-connection string rather than the direct one. These are noted in `decisions.md` §13 as things
+connection string rather than the direct one. These are noted in `decisions.md` §14 as things
 a production version would change.
 
 ---
@@ -58,12 +55,7 @@ together.
 1. Push the repo to GitHub.
 2. Render dashboard → **New → Blueprint** → pick the repo.
 3. Render provisions both and injects `SIFT_DATABASE_URL` from the database automatically.
-4. Seed it once, using the database's **External Connection String** from the Render
-   dashboard:
-
-   ```bash
-   SIFT_DATABASE_URL='postgres://…' npm run setup
-   ```
+4. Open the URL and click **Load the 40-document demo pile**.
 
 Free-tier web services sleep after inactivity; the first request after a sleep takes about
 thirty seconds to wake.
@@ -81,7 +73,6 @@ Or bring up the app and a database together:
 
 ```bash
 docker compose up --build
-docker compose exec app npm run setup    # seed the demo pile
 ```
 
 ---

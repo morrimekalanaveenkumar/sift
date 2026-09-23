@@ -60,7 +60,7 @@ export default async function Home() {
                 {projects.length ? 'Add another pile' : 'Start with a pile'}
               </span>
             </div>
-            <div className={shell.panelBody}><Upload /></div>
+            <div className={shell.panelBody}><Upload showDemo={projects.length === 0} /></div>
           </div>
         </div>
       </div>

@@ -36,12 +36,12 @@ export const api = {
  */
 export async function stream<T>(
   url: string,
-  body: FormData,
+  body: FormData | undefined,
   onLine: (line: T) => void,
 ): Promise<void> {
   let response: Response;
   try {
-    response = await fetch(url, { method: 'POST', body });
+    response = await fetch(url, body ? { method: 'POST', body } : { method: 'POST' });
   } catch {
     throw new ApiError('Could not reach the server.');
   }

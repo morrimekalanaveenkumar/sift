@@ -32,7 +32,7 @@ const KB = 1024;
 const size = (bytes: number) =>
   bytes < KB * 999 ? `${Math.max(1, Math.round(bytes / KB))} KB` : `${(bytes / KB / KB).toFixed(1)} MB`;
 
-export function Upload() {
+export function Upload({ showDemo = false }: { showDemo?: boolean }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -56,21 +56,16 @@ export function Upload() {
     });
   };
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (files.length === 0 || busy) return;
-
+  /** Both entry points do the same thing once a request is in flight. */
+  const run = async (url: string, body: FormData | undefined, total: number) => {
+    if (busy) return;
     setBusy(true);
     setError(null);
-    setProgress({ stage: 'parsing', done: 0, total: files.length, message: '' });
-
-    const form = new FormData();
-    form.set('name', name.trim() || `${files.length} document${files.length === 1 ? '' : 's'}`);
-    for (const file of files) form.append('files', file);
+    setProgress({ stage: 'parsing', done: 0, total, message: '' });
 
     try {
       let destination: string | null = null;
-      await stream<Line>('/api/projects', form, (line) => {
+      await stream<Line>(url, body, (line) => {
         if ('progress' in line) setProgress(line.progress);
         else if ('done' in line) destination = `/p/${line.done.projectId}`;
         else if ('error' in line) throw new Error(line.error);
@@ -83,6 +78,20 @@ export function Upload() {
       setBusy(false);
     }
   };
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (files.length === 0) return;
+
+    const form = new FormData();
+    form.set('name', name.trim() || `${files.length} document${files.length === 1 ? '' : 's'}`);
+    for (const file of files) form.append('files', file);
+    void run('/api/projects', form, files.length);
+  };
+
+  // 40, because that is what the generator makes — a real total keeps the counter honest
+  // rather than having it crawl toward a number nobody chose.
+  const loadDemo = () => void run('/api/demo', undefined, 40);
 
   const activeIndex = progress ? STAGES.findIndex((s) => s.key === progress.stage) : -1;
   const shown = files.slice(0, 6);
@@ -162,6 +171,17 @@ export function Upload() {
           {busy ? 'Sifting…' : 'Sift it'}
         </button>
       </div>
+
+      {showDemo && (
+        <p className={styles.demoRow}>
+          Nothing to hand?{' '}
+          <button type="button" className={styles.demoLink} onClick={loadDemo} disabled={busy}>
+            Load the 40-document demo pile
+          </button>{' '}
+          — five vendors naming the same fields five ways, a rotated scan, a statement
+          spanning a page break, and two letters that should produce no schema at all.
+        </p>
+      )}
 
       {progress && (
         <div className={styles.progress} role="status" aria-live="polite">

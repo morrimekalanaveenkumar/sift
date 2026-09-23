@@ -354,7 +354,28 @@ Delete everything" is the same two decisions without any of that.
 
 ---
 
-## 12. Product decisions
+## 12. A deployment seeds itself
+
+The first thing anyone who opens a deployed URL used to see was an empty upload box: a tool
+that cannot demonstrate itself until the visitor goes and finds forty documents. For a
+take-home that is the wrong first frame, and for a real product it is worse.
+
+So the corpus generator moved out of `scripts/` and into `src/lib/corpus/generate.ts`, and
+an empty database now offers **Load the 40-document demo pile** — generated on the server
+and ingested in about a second, streaming the same progress panel a real upload uses.
+
+Three details that made it work rather than half-work. The corpus is generated in memory
+rather than read from disk, because `corpus/` is not committed (it is deterministic, so
+there is nothing to gain from committing forty PDFs) and a serverless filesystem is
+read-only anyway. `pdf-lib` therefore moved from devDependencies to dependencies, since it
+now runs in the deployed app. And the route answers in NDJSON even in the already-seeded
+case, where there is nothing to stream — my first version returned a plain JSON body there
+and special-cased it in the client, which promptly broke three stream tests. One protocol is
+worth more than the four lines it saves.
+
+---
+
+## 13. Product decisions
 
 **Show the document, not a form.** Every value in the review queue is shown on the page it
 came from, with the value boxed, its label boxed, and a dotted line between them. The
@@ -389,7 +410,7 @@ rule against the wrong page.
 
 ---
 
-## 13. What I deliberately cut
+## 14. What I deliberately cut
 
 - **OCR.** A page with no text layer is detected and reported as needing OCR rather than
   silently returning nothing. Wiring in Tesseract is a day of plumbing and would not have
@@ -417,7 +438,7 @@ rule against the wrong page.
 
 ---
 
-## 14. Known limits
+## 15. Known limits
 
 - **Accuracy is measured against a generated corpus.** 186/186 on invoices is a real
   number, checked by a harness that rebuilds the table from the current schema every run so

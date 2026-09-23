@@ -41,6 +41,11 @@ not exist, applies the schema, generates the test corpus if it is missing, and i
 Ingesting all 40 documents — parsing, layout analysis, clustering, reconciliation and
 storage — takes about **1.5 seconds**.
 
+A deployed instance with an empty database offers **Load the 40-document demo pile** on the
+home page, which generates the corpus server-side and ingests it in about a second. A
+reviewer opening the URL sees the whole thing working without having to find documents
+first.
+
 ```bash
 npm test          # 64 tests
 npm run typecheck
@@ -316,8 +321,9 @@ src/lib/db/         schema.ts       the `sift` schema
 src/components/     viewer/         pixel-aligned overlays on the rendered page
                     review/         the queue, the morph, the FLIP
                     DataView        the query surface
+src/lib/corpus/     generate.ts     the 40-document corpus, generated in memory
 scripts/            setup.ts        one command to a working demo
-                    make-corpus.ts  40 documents with recorded ground truth
+                    make-corpus.ts  writes that corpus to disk
                     dev/            probes used while building, and the screenshot walkthrough
 ```
 
