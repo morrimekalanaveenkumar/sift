@@ -398,13 +398,17 @@ fields, reported as a success.
 
 The cause was two bugs stacked, and the second is the interesting one.
 
-**The proximate cause.** `standardFontDataUrl` pointed pdf.js at its bundled copy of the
-fourteen standard PDF fonts. Those are data files that nothing imports, so dependency
-tracing does not follow them and the deployed build had the package without the
-directory. Handing pdf.js a path that is not there is *worse* than handing it nothing: it
-fails to load a font and the whole text extraction rejects. Every page came back empty.
-Fixed by checking the directory exists before using it, and by naming the fonts in
-`outputFileTracingIncludes` so they are actually deployed.
+**The proximate cause.** pdf.js loads its worker through a dynamically constructed import
+path rather than a static `import`, so a bundler's dependency tracing never sees it and
+the deployed build had `pdf.mjs` without `pdf.worker.mjs` beside it. Every parse died with
+*"Setting up fake worker failed"*. The standard-font metrics have the same problem for a
+different reason — they are data files nothing imports at all. Both are now named in
+`outputFileTracingIncludes`, and the font path is additionally guarded with `existsSync`,
+because handing pdf.js a path that is not there is worse than handing it nothing.
+
+Worth noting how that cause was found: it was in the error message, the first time the
+error was allowed to surface. The fix below is what turned a silent wrong answer into a
+one-line diagnosis.
 
 **The real bug.** The parse loop caught per-file failures and recorded an empty document,
 so that one bad file among forty would not lose the other thirty-nine. That is right. But
