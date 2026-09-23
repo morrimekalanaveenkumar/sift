@@ -298,7 +298,7 @@ than after it (bare number, 0.7).
 
 ---
 
-## 9. Two framework traps worth writing down
+## 9. Three deployment traps worth writing down
 
 **A CSS module re-exported from a client component silently disappears in a server one.**
 `Shell.tsx` is a `'use client'` file and it used to end with `export { styles as shell }`,
@@ -309,6 +309,21 @@ evaluated to `undefined` and the page rendered with no classes at all. No error,
 warning, and it only affected the one page that crossed the boundary that way, so every
 other screenshot looked correct. The fix is to import `shell.module.css` directly wherever
 it is used; the re-export is gone and there is a comment in `Shell.tsx` saying why.
+
+**A connection pooler rejects `options: -c search_path=...`.** Setting the schema as a
+connection option is the neat way to do it, and it works perfectly against a Postgres you
+connect to directly — which is every Postgres I tested against. PgBouncer, which sits in
+front of Neon and most hosted Postgres, refuses unknown startup parameters outright, so
+the first deployment came up with *"unsupported startup parameter in options:
+search_path"*.
+
+The obvious repair is worse than the bug: issuing `SET search_path` once per checkout
+fails *silently*. A pooler in transaction mode hands each transaction whichever server
+connection is free, so the setting applies to a connection the next query may not get. It
+works on a quiet machine and starts losing tables under load. `SET LOCAL` inside a
+transaction is the version that holds everywhere, because the transaction pins one server
+connection for its whole life — so every database access is now transactional, including
+reads, which are cheap and arguably should have been anyway.
 
 **Streamed responses need `X-Accel-Buffering: no`.** Without it a reverse proxy buffers the
 whole NDJSON body and delivers it in one lump at the end, which looks exactly like not

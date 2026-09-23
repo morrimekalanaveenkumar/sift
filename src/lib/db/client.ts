@@ -23,9 +23,6 @@ export function db(): Pool {
       max: 10,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,
-      // Set on the connection rather than qualifying every table name in every query —
-      // one line, and no chance of a missed prefix writing to the wrong schema.
-      options: `-c search_path=${SCHEMA},public`,
     });
     pool.on('error', (e) => console.error('[sift] idle client error', e));
   }
@@ -59,36 +56,63 @@ export function explain(e: unknown): unknown {
   return hint ? new Error(`${hint}\n  (Postgres said: ${message})`) : e;
 }
 
-export async function withDb<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
+/**
+ * Check out a connection, put it on the right schema, and run everything in one
+ * transaction.
+ *
+ * The schema part used to be a connection option — `options: -c search_path=sift,public`
+ * — which is the neat way to do it and works perfectly against a Postgres you connect to
+ * directly. It does not survive a connection pooler. PgBouncer, which is what sits in
+ * front of Neon and most hosted Postgres, rejects unknown startup parameters outright:
+ *
+ *     unsupported startup parameter in options: search_path
+ *
+ * The obvious repair — issue `SET search_path` once per checkout — is worse, because it
+ * fails silently rather than loudly. A pooler in *transaction* mode hands each
+ * transaction whichever server connection is free, so a session-level SET applies to a
+ * connection that the next query may not get. It works on a quiet machine and starts
+ * losing tables under concurrency, which is the worst way for a bug to behave.
+ *
+ * `SET LOCAL` inside a transaction is the version that holds everywhere: the transaction
+ * pins one server connection for its whole life, so the setting cannot drift away from
+ * the queries it applies to. The cost is that every database access is now a transaction,
+ * including reads — which are cheap, and which arguably should have been transactional
+ * anyway.
+ */
+async function connect<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
   let client: PoolClient;
   try {
     client = await db().connect();
   } catch (e) {
     throw explain(e);
   }
+
   try {
-    return await fn(client);
+    await client.query('BEGIN');
+    await client.query(`SET LOCAL search_path = ${SCHEMA}, public`);
+    const out = await fn(client);
+    await client.query('COMMIT');
+    return out;
+  } catch (e) {
+    // The rollback is best-effort: if the failure was the connection itself dropping,
+    // this throws too, and the original error is the one worth reporting.
+    try { await client.query('ROLLBACK'); } catch { /* already gone */ }
+    throw e;
   } finally {
     client.release();
   }
 }
 
-export async function withTx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
-  return withDb(async (c) => {
-    await c.query('BEGIN');
-    try {
-      const out = await fn(c);
-      await c.query('COMMIT');
-      return out;
-    } catch (e) {
-      await c.query('ROLLBACK');
-      throw e;
-    }
-  });
-}
+/** Run queries against the database. Transactional — see `connect` for why. */
+export const withDb = connect;
+
+/**
+ * Run queries in a transaction. Identical to `withDb` now that everything is
+ * transactional; kept as a separate name because at the call sites it says something
+ * true and useful — that this block must not half-happen.
+ */
+export const withTx = connect;
 
 export async function ensureSchema(): Promise<void> {
-  // In a transaction so the `SET LOCAL search_path` inside the script applies — outside
-  // one it is a no-op and the tables land in `public`.
   await withTx(async (c) => { await c.query(SCHEMA_SQL); });
 }
