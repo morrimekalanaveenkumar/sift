@@ -15,6 +15,7 @@
  *      items in order gets two documents shuffled together.
  */
 
+import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname } from 'node:path';
 import { getDocument, Util, type PDFPageProxy } from 'pdfjs-dist/legacy/build/pdf.mjs';
@@ -48,11 +49,19 @@ const applyTransform = (p: [number, number], m: Matrix): [number, number] => [
  * metrics from its own bundled copy. Without this it still extracts the text, but warns
  * once per page — eighty lines of noise on a forty-document run, which is exactly the
  * kind of thing that makes a tool feel broken when it is working fine.
+ *
+ * The `existsSync` is not defensive padding. Those fonts are data files that nothing
+ * imports, so a bundler's dependency tracing does not follow them, and a deployed build
+ * can have the package without the directory. Handing pdf.js a path that is not there is
+ * worse than handing it nothing: it then fails to load a font and the whole text
+ * extraction rejects, so every page comes back empty and the pile looks like prose.
+ * That is exactly what happened on the first deploy.
  */
 const standardFontDataUrl = (() => {
   try {
     const require = createRequire(import.meta.url);
-    return `${dirname(require.resolve('pdfjs-dist/package.json'))}/standard_fonts/`;
+    const path = `${dirname(require.resolve('pdfjs-dist/package.json'))}/standard_fonts/`;
+    return existsSync(path) ? path : undefined;
   } catch {
     return undefined;
   }

@@ -42,7 +42,7 @@ rather than degrading — so raise it in `src/app/api/projects/route.ts` if you 
 Compute and want to accept much larger piles. Progress is streamed as NDJSON, which needs a
 Node runtime rather than Edge; that is the default here and nothing declares otherwise. And
 `pg`'s pool does not survive between invocations, so a busy deployment wants Neon's pooled
-connection string rather than the direct one. These are noted in `decisions.md` §14 as things
+connection string rather than the direct one. These are noted in `decisions.md` §15 as things
 a production version would change.
 
 ---

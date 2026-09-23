@@ -118,6 +118,13 @@ describe('reading a PDF the way a person sees it', () => {
     expect(amounts.some((a) => /^\(\d+\.\d{2}\)$/.test(a))).toBe(true);
   });
 
+  it('rejects a file it cannot read, rather than returning an empty document', async () => {
+    // The caller decides what an unreadable file means — one bad file in a pile is
+    // survivable, every file unreadable is a broken install — and it can only tell the
+    // difference if this throws instead of quietly answering "no pages".
+    await expect(parsePdf(new TextEncoder().encode('this is not a PDF'))).rejects.toThrow();
+  });
+
   it('reports a page that carries no text rather than pretending it is empty', async () => {
     // "This needs OCR" and "this page is blank" are different answers and the user
     // deserves to be told which one they have.

@@ -390,7 +390,40 @@ worth more than the four lines it saves.
 
 ---
 
-## 13. Product decisions
+## 13. A pile that reads as nothing is an error, not a finding
+
+The first working deployment produced a confident wrong answer: forty invoices, receipts
+and statements, clustered into a single kind named **"Unstructured documents"**, zero
+fields, reported as a success.
+
+The cause was two bugs stacked, and the second is the interesting one.
+
+**The proximate cause.** `standardFontDataUrl` pointed pdf.js at its bundled copy of the
+fourteen standard PDF fonts. Those are data files that nothing imports, so dependency
+tracing does not follow them and the deployed build had the package without the
+directory. Handing pdf.js a path that is not there is *worse* than handing it nothing: it
+fails to load a font and the whole text extraction rejects. Every page came back empty.
+Fixed by checking the directory exists before using it, and by naming the fonts in
+`outputFileTracingIncludes` so they are actually deployed.
+
+**The real bug.** The parse loop caught per-file failures and recorded an empty document,
+so that one bad file among forty would not lose the other thirty-nine. That is right. But
+it made "one bad file" and "nothing works at all" indistinguishable from outside — and
+when everything fails, a pile with no text legitimately clusters into one kind, gets named
+"Unstructured documents" by a rule that is behaving correctly, and reports success. Every
+layer did its job and the system told the user their invoices were prose.
+
+So: if *every* file fails, ingestion now throws and says so, naming the first failure and
+pointing at the environment rather than the documents. The only trace before was a
+`console.error` in a serverless log nobody reads.
+
+The general lesson is about where to put tolerance. Per-item error recovery is good; the
+same recovery applied to *every* item is a system that cannot tell success from total
+failure. Anything that swallows errors per item needs a check on the aggregate.
+
+---
+
+## 14. Product decisions
 
 **Show the document, not a form.** Every value in the review queue is shown on the page it
 came from, with the value boxed, its label boxed, and a dotted line between them. The
@@ -425,7 +458,7 @@ rule against the wrong page.
 
 ---
 
-## 14. What I deliberately cut
+## 15. What I deliberately cut
 
 - **OCR.** A page with no text layer is detected and reported as needing OCR rather than
   silently returning nothing. Wiring in Tesseract is a day of plumbing and would not have
@@ -453,7 +486,7 @@ rule against the wrong page.
 
 ---
 
-## 15. Known limits
+## 16. Known limits
 
 - **Accuracy is measured against a generated corpus.** 186/186 on invoices is a real
   number, checked by a harness that rebuilds the table from the current schema every run so

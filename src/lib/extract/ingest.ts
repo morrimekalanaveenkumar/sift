@@ -36,6 +36,8 @@ export async function ingest(
 
   // --- parse ---------------------------------------------------------------
   const parsed: { filename: string; bytes: Uint8Array; doc: ParsedDocument }[] = [];
+  const unreadable: { filename: string; reason: string }[] = [];
+
   for (const [i, file] of files.entries()) {
     report({ stage: 'parsing', done: i, total: files.length, message: file.filename });
     try {
@@ -52,8 +54,24 @@ export async function ingest(
         ...file,
         doc: { pageCount: 0, pages: [], charCount: 0 },
       });
+      unreadable.push({ filename: file.filename, reason: (err as Error).message });
       console.error(`[sift] could not parse ${file.filename}:`, (err as Error).message);
     }
+  }
+
+  // One unreadable file among forty is a bad file. *Every* file unreadable is a broken
+  // install, and the two must not look the same from outside. Swallowing both produces
+  // the worst possible outcome: a pile with no text clusters into a single kind, gets
+  // named "Unstructured documents", and reports success — so the system confidently
+  // tells you your invoices are prose. A deployment where the PDF library could not load
+  // its fonts did exactly that, and the only trace was a console line nobody reads.
+  if (files.length > 0 && unreadable.length === files.length) {
+    throw new Error(
+      `None of the ${files.length} documents could be read, so there is nothing to `
+      + `structure. This usually means the PDF library is not working in this `
+      + `environment rather than that the documents are bad. First failure — `
+      + `${unreadable[0]!.filename}: ${unreadable[0]!.reason}`,
+    );
   }
 
   // --- analyse (two passes over the whole pile) -----------------------------
